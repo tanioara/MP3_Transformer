@@ -5,6 +5,7 @@ import plotly.express as px
 
 from generation import generate_text, generate_text_with_head_mask
 from attention_extractor import extract_attentions
+from language_comparison import compare_ro_en
 
 
 st.title("RoGPT2 Attention Analyzer")
@@ -236,6 +237,121 @@ if "attentions" in st.session_state:
             st.warning(
                 "Outputurile sunt diferite. Acest lucru poate indica faptul că head-ul dezactivat "
                 "influențează predicția modelului pentru acest prompt."
+            )
+
+
+
+
+
+            # ---------------------------------------------------------
+    # ROMANIAN VS ENGLISH COMPARISON
+    # ---------------------------------------------------------
+
+    st.subheader("Romanian vs English Comparison")
+
+    st.write(
+        "Această secțiune compară cum același model procesează propoziții similare "
+        "în română și engleză. Comparăm tokenizarea și head-urile care acordă atenție "
+        "unei relații alese."
+    )
+
+    st.write(
+        "Exemplu: în română analizăm relația `ea → Pisica`, iar în engleză relația `it → cat`."
+    )
+
+    ro_text = st.text_area(
+        "Romanian sentence",
+        "Pisica tigrată a sărit peste gard, iar după câteva minute ea s-a întors.",
+        key="ro_text"
+    )
+
+    en_text = st.text_area(
+        "English sentence",
+        "The striped cat jumped over the fence, and after a few minutes it returned.",
+        key="en_text"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        ro_source = st.text_input(
+            "Romanian source word",
+            "ea",
+            key="ro_source"
+        )
+
+        ro_target = st.text_input(
+            "Romanian target word",
+            "Pisica",
+            key="ro_target"
+        )
+
+    with col2:
+        en_source = st.text_input(
+            "English source word",
+            "it",
+            key="en_source"
+        )
+
+        en_target = st.text_input(
+            "English target word",
+            "cat",
+            key="en_target"
+        )
+
+    if st.button("Compare Romanian vs English"):
+        ro_result, en_result, summary_df = compare_ro_en(
+            ro_text,
+            en_text,
+            ro_source,
+            ro_target,
+            en_source,
+            en_target
+        )
+
+        st.subheader("Tokenization comparison")
+        st.dataframe(summary_df, use_container_width=True)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("Romanian tokens")
+            st.write(list(enumerate(ro_result["tokens"])))
+
+            st.subheader("Romanian generated text")
+            st.write(ro_result["generated_text"])
+
+        with col2:
+            st.subheader("English tokens")
+            st.write(list(enumerate(en_result["tokens"])))
+
+            st.subheader("English generated text")
+            st.write(en_result["generated_text"])
+
+        st.subheader("Romanian head ranking")
+
+        if ro_result["ranking"] is not None:
+            st.write(
+                f"Relație analizată: **{ro_source} → {ro_target}**"
+            )
+            st.dataframe(ro_result["ranking"], use_container_width=True)
+        else:
+            st.warning(
+                "Nu am găsit automat tokenii pentru relația românească. "
+                "Încearcă să scrii doar o parte din cuvânt, de exemplu `P` în loc de `Pisica`."
+            )
+
+        st.subheader("English head ranking")
+
+        if en_result["ranking"] is not None:
+            st.write(
+                f"Relation analyzed: **{en_source} → {en_target}**"
+            )
+            st.dataframe(en_result["ranking"], use_container_width=True)
+        else:
+            st.warning(
+                "Nu am găsit automat tokenii pentru relația engleză. "
+                "Încearcă să scrii doar o parte din cuvânt, de exemplu `cat`."
             )
 
 else:
