@@ -1,26 +1,27 @@
 from model_loader import tokenizer, model
 from config import DEVICE
+import torch
+import numpy as np
+
 
 def extract_attentions(text):
-
     inputs = tokenizer(text, return_tensors="pt").to(DEVICE)
-
-    tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
 
     with torch.no_grad():
         outputs = model(
             **inputs,
-            output_attentions=True
+            output_attentions=True,
+            return_dict=True
         )
 
-    return outputs.attentions, tokens
+    tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+    attentions = outputs.attentions
 
-import numpy as np
+    return tokens, attentions
+
 
 def top_attended_tokens(matrix, tokens, token_index, top_k=5):
-
     scores = matrix[token_index]
-
     top_idx = np.argsort(scores)[::-1][:top_k]
 
     return [
